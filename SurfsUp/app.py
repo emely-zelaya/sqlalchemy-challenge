@@ -3,6 +3,7 @@ from flask import Flask, jsonify
 from sqlalchemy import create_engine, func
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.automap import automap_base
+import numpy as np
 import datetime as dt
 
 #################################################
@@ -46,7 +47,6 @@ def home():
 @app.route('/api/v1.0/precipitation')
 def precipitation():
     session = Session(engine)
-
     return [ {d:p} for d,p in session.query(Measurement.date, Measurement.prcp).filter(Measurement.date>='2016-08-23').all()]
 
 @app.route('/api/v1.0/station')
@@ -54,8 +54,11 @@ def stations():
     session = Session(engine)
 
     results=session.query(Station.station, Station.name).all()
+    session.close()
+    #return [ {id:loc} for id,loc in results]
+    stations= list(np.ravel(results))
+    return jsonify(stations=stations)
 
-    return [ {id:loc} for id,loc in results]
 
 
 @app.route("/api/v1.0/tobs")
@@ -64,14 +67,14 @@ def tobs():
 
      queryresult = session.query( Measurement.date, Measurement.tobs).filter(Measurement.station=='USC00519281')\
      .filter(Measurement.date>='2016-08-23').all()
-
+     session.close()
      tob_obs = []
      for date, tobs in queryresult:
          tobs_dict = {}
          tobs_dict["Date"] = date
          tobs_dict["Tobs"] = tobs
          tob_obs.append(tobs_dict)
-
+ 
      return jsonify(tob_obs)
 
 
